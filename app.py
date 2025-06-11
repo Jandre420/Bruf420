@@ -1,47 +1,50 @@
 import pandas as pd
 import streamlit as st
 
-# Carregar os dados
+st.set_page_config(page_title="Dashboard de Vendas", layout="wide")
+st.markdown("""
+    <style>
+        .metric-card { background-color: #F9F9F9; border-radius: 10px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stTextInput > div > input { font-size: 16px; }
+    </style>
+""", unsafe_allow_html=True)
+
 @st.cache_data
 def load_data():
-    df = pd.read_excel("consolidated_sales.xlsx", sheet_name="Sheet1")
-    df.columns = df.columns.str.strip()  # Limpar espaços em branco
-    df['Data de Emissão'] = pd.to_datetime(df['Data de Emissão'])
+    df = pd.read_excel("consolidated_sales.xlsx")
+    df.columns = df.columns.str.strip()
+    df["Data de Emissão"] = pd.to_datetime(df["Data de Emissão"])
     return df
 
 df = load_data()
+total_vendas = len(df)
+valor_total = df["Valor"].sum()
+clientes_unicos = df["Código Cliente"].nunique()
+ticket_medio = valor_total / clientes_unicos if clientes_unicos else 0
 
-st.title("Acompanhamento de Pedidos por Cliente")
+st.title("📊 Dashboard de Vendas")
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Total de Vendas", total_vendas)
+col2.metric("Valor Total", f"R$ {valor_total:,.2f}")
+col3.metric("Clientes Únicos", clientes_unicos)
+col4.metric("Ticket Médio", f"R$ {ticket_medio:,.2f}")
 
-# Filtros
-clientes = st.multiselect(
-    "Selecione o(s) Cliente(s):",
-    options=df['Código Cliente'].unique(),
-    default=df['Código Cliente'].unique()
-)
+st.markdown("---")
+st.subheader("🔎 Buscar Vendas")
+busca = st.text_input("Digite o código ou nome do cliente:")
 
-data_min = df['Data de Emissão'].min()
-data_max = df['Data de Emissão'].max()
-data_range = st.date_input("Intervalo de Datas:", [data_min, data_max])
+if busca:
+    filtro_df = df[df["Código Cliente"].astype(str).str.contains(busca, case=False) |
+                   df["Nome Cliente"].astype(str).str.contains(busca, case=False)]
+else:
+    filtro_df = df.copy()
 
-# Aplicar filtros
-filtro_df = df[
-    df['Código Cliente'].isin(clientes) &
-    (df['Data de Emissão'] >= pd.to_datetime(data_range[0])) &
-    (df['Data de Emissão'] <= pd.to_datetime(data_range[1]))
-]
+clientes, vendas = st.columns(2)
+with clientes:
+    st.markdown("#### Clientes")
+    st.dataframe(filtro_df[["Código Cliente", "Nome Cliente"]].drop_duplicates(), use_container_width=True)
+with vendas:
+    st.markdown("#### Vendas")
+    st.dataframe(filtro_df[["Data de Emissão", "Código Cliente", "Nome Cliente", "Valor"]].sort_values(by="Data de Emissão", ascending=False), use_container_width=True)
 
-# Exibir dados
-st.subheader("Pedidos Filtrados")
-st.dataframe(filtro_df)
-
-# Total por cliente
-st.subheader("Total de Pedidos por Cliente")
-total_por_cliente = filtro_df.groupby('Código Cliente')['Valor'].sum().reset_index()
-st.bar_chart(total_por_cliente.set_index('Código Cliente'))
-
-# Total geral
-st.metric("Valor Total dos Pedidos Filtrados", f"R$ {filtro_df['Valor'].sum():,.2f}")
-
-# Instruções
-st.info("Para adicionar novos dados, atualize a planilha 'consolidated_sales.xlsx' e recarregue a página.")
+st.info("Para atualizar os dados, substitua o arquivo `consolidated_sales.xlsx`.")
