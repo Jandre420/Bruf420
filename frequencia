@@ -1,0 +1,6 @@
+st.subheader("Frequência de Pedidos")
+df['dia_semana'] = df['data_pedido'].dt.day_name('pt_BR')
+df['hora'] = df['data_pedido'].dt.hour
+pivot_table = pd.pivot_table(df, values='valor', index='hora', columns='dia_semana', aggfunc='count')
+fig_heatmap = px.imshow(pivot_table, labels=dict(x="Dia", y="Hora", color="Pedidos"))
+st.plotly_chart(fig_heatmap, use_container_width=True)
