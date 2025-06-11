@@ -1,0 +1,71 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+
+# Configuração da página
+st.set_page_config(page_title="Dashboard de Pedidos", layout="wide")
+
+# Título
+st.title("📊 Dashboard de Pedidos por Cliente")
+
+# Carregar dados (substitua pelo seu DataFrame)
+# Supondo que temos colunas: "cliente_cod", "data_pedido", "valor_pedido"
+@st.cache_data
+def load_data():
+    # Aqui você pode carregar de um CSV, Excel, etc.
+    # Exemplo:
+    # df = pd.read_csv("dados_pedidos.csv")
+    # Criando dados de exemplo
+    data = {
+        "cliente_cod": ["C001", "C002", "C001", "C003", "C002"],
+        "data_pedido": pd.to_datetime(["2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04", "2023-01-05"]),
+        "valor_pedido": [100, 150, 200, 50, 300]
+    }
+    df = pd.DataFrame(data)
+    return df
+
+df = load_data()
+
+# Filtros na sidebar
+st.sidebar.header("Filtros")
+clientes_selecionados = st.sidebar.multiselect(
+    "Selecione os Clientes",
+    options=df['cliente_cod'].unique(),
+    default=df['cliente_cod'].unique()
+)
+
+# Filtrar dados
+df_filtrado = df[df['cliente_cod'].isin(clientes_selecionados)]
+
+# Se não houver dados selecionados, mostrar todos
+if len(clientes_selecionados) == 0:
+    df_filtrado = df.copy()
+
+# Ordenar por data
+df_filtrado = df_filtrado.sort_values(by="data_pedido")
+
+# KPIs
+total_pedidos = len(df_filtrado)
+total_valor = df_filtrado['valor_pedido'].sum()
+media_valor = df_filtrado['valor_pedido'].mean()
+
+# Layout de colunas para KPIs
+col1, col2, col3 = st.columns(3)
+col1.metric("Total de Pedidos", total_pedidos)
+col2.metric("Valor Total", f"R$ {total_valor:,.2f}")
+col3.metric("Média por Pedido", f"R$ {media_valor:,.2f}")
+
+# Gráfico de linha
+fig = px.line(
+    df_filtrado,
+    x="data_pedido",
+    y="valor_pedido",
+    color='cliente_cod',
+    markers=True,
+    title="Valor dos Pedidos ao Tempo"
+)
+st.plotly_chart(fig, use_container_width=True)
+
+# Tabela com dados
+st.subheader("Dados Detalhados")
+st.dataframe(df_filtrado)
