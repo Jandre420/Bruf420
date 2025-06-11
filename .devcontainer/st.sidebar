@@ -1,0 +1,11 @@
+with st.sidebar:
+    st.header("Filtros")
+    
+    # Seletor de cliente
+    clientes = df['cliente_id'].unique()
+    selected_client = st.selectbox("Selecione o Cliente", clientes)
+    
+    # Filtro de data
+    min_date = df['data_pedido'].min().date()
+    max_date = df['data_pedido'].max().date()
+    date_range = st.date_input("Período", [min_date, max_date])
