@@ -1,0 +1,41 @@
+# Filtrar dados
+filtered_df = df[
+    (df['cliente_id'] == selected_client) &
+    (df['data_pedido'].dt.date >= date_range[0]) &
+    (df['data_pedido'].dt.date <= date_range[1])
+]
+
+# Layout em colunas
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric("Total Pedidos", len(filtered_df))
+    
+with col2:
+    st.metric("Valor Total", f"R${filtered_df['valor'].sum():,.2f}")
+    
+with col3:
+    st.metric("Média por Pedido", f"R${filtered_df['valor'].mean():,.2f}")
+
+# Gráfico de linha temporal
+st.subheader(f"Evolução de Pedidos - Cliente {selected_client}")
+fig = px.line(
+    filtered_df,
+    x="data_pedido",
+    y="valor",
+    markers=True,
+    labels={"valor": "Valor (R$)", "data_pedido": "Data do Pedido"}
+)
+st.plotly_chart(fig, use_container_width=True)
+
+# Tabela detalhada
+st.subheader("Detalhes dos Pedidos")
+st.dataframe(
+    filtered_df.sort_values('data_pedido', ascending=False),
+    hide_index=True,
+    column_order=["data_pedido", "valor"],
+    column_config={
+        "data_pedido": st.column_config.DateColumn("Data", format="DD/MM/YYYY"),
+        "valor": st.column_config.NumberColumn("Valor (R$)", format="R$ %.2f")
+    }
+)
