@@ -1,0 +1,4 @@
+st.subheader("Comparação entre Clientes")
+top_clientes = df.groupby('cliente_id')['valor'].sum().nlargest(5).reset_index()
+fig_bar = px.bar(top_clientes, x='cliente_id', y='valor')
+st.plotly_chart(fig_bar, use_container_width=True)
